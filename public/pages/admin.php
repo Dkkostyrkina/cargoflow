@@ -54,6 +54,8 @@
 }
 .adm__nav-btn:hover   { background: rgba(59,130,246,.08); color: var(--clr-text, #e2e8f0); }
 .adm__nav-btn--active { background: rgba(59,130,246,.15); color: var(--clr-accent, #3b82f6); }
+.adm__nav-btn--logout { margin-top: auto; color: #f87171; }
+.adm__nav-btn--logout:hover { background: rgba(239,68,68,.1); color: #ef4444; }
 
 .adm__main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
@@ -216,14 +218,14 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         &#1040;&#1085;&#1072;&#1083;&#1080;&#1090;&#1080;&#1082;&#1072;
       </button>
-      <a class="adm__nav-btn" href="/index.php?page=cabinet">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        &#1051;&#1080;&#1095;&#1085;&#1099;&#1081; &#1082;&#1072;&#1073;&#1080;&#1085;&#1077;&#1090;
-      </a>
       <a class="adm__nav-btn" href="/index.php?page=home">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         &#1053;&#1072; &#1089;&#1072;&#1081;&#1090;
       </a>
+      <button class="adm__nav-btn adm__nav-btn--logout" id="adm-logout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        &#1042;&#1099;&#1093;&#1086;&#1076;
+      </button>
     </nav>
   </aside>
 
@@ -628,6 +630,21 @@
           }
         }
       });
+    });
+  }
+
+  /* ── Logout ── */
+  var logoutBtn = document.getElementById('adm-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function () {
+      fetch(CABAPI + '?action=logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({ action: 'logout' }),
+      })
+        .then(function () { window.location.href = '/index.php?page=cabinet'; })
+        .catch(function () { window.location.href = '/index.php?page=cabinet'; });
     });
   }
 

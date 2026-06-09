@@ -465,17 +465,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showApp(user) {
     currentUser = user;
+
+    // Администратор работает только в админ-панели — отправляем его туда
+    if (user.role === 'admin') {
+      window.location.replace('/index.php?page=admin');
+      return;
+    }
+
     cabAuth.style.display = 'none';
     cabApp.style.display = '';
     document.getElementById('cab-user-name').textContent = user.full_name || user.email;
     document.getElementById('cab-user-company').textContent = user.company || '';
-
-    // Показать ссылку на админ-панель только администратору
-    const isAdmin = user.role === 'admin';
-    const adminNav = document.getElementById('admin-nav');
-    const adminLink = document.getElementById('nav-admin-panel');
-    if (adminNav) adminNav.style.display = isAdmin ? '' : 'none';
-    if (adminLink) adminLink.style.display = isAdmin ? '' : 'none';
 
     loadDashboard();
   }

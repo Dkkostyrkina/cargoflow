@@ -54,7 +54,7 @@ if ($action === 'csrf') {
 }
 
 // POST-запросы (кроме login/register/check/logout/csrf) требуют CSRF
-$csrfExempt = ['check', 'dashboard', 'applications', 'documents', 'csrf'];
+$csrfExempt = ['login', 'register', 'check', 'logout', 'dashboard', 'applications', 'documents', 'csrf'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, $csrfExempt, true)) {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($body['csrf_token'] ?? null);
     if (!cf_csrf_verify($csrfToken)) {
@@ -324,6 +324,11 @@ if ($action === 'check') {
 
 // ═══ AUTH: LOGOUT ═══
 if ($action === 'logout') {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+    }
     session_destroy();
     jsonOut(['status' => 'ok']);
 }
