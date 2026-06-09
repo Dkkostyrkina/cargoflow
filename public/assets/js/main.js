@@ -430,12 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
     applications: 'Мои заявки',
     'new-app': 'Создать заявку',
     documents: 'Документы',
-    profile: 'Профиль',
-    'all-applications': 'Все заявки клиентов',
-    users: 'Пользователи'
+    profile: 'Профиль'
   };
-
-  const ADMIN_API = '/api/admin.php';
 
   async function cabApi(action, body) {
     if (body) {
@@ -558,8 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (view === 'applications') loadApplications();
       if (view === 'documents') loadDocuments();
       if (view === 'profile') loadProfile();
-      if (view === 'all-applications') loadAllApplications();
-      if (view === 'users') loadUsers();
     });
   });
 
@@ -583,181 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${statusBadge(r.status)}</td>
         </tr>
       `).join('');
-    } catch {}
-
-    // Admin: load global stats
-    if (currentUser && currentUser.role === 'admin') {
-      try {
-        const res = await fetch(`${ADMIN_API}?action=stats`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const ds = await res.json();
-        if (ds.status === 'ok' && ds.stats) {
-          const s = ds.stats;
-          let adminStatsEl = document.getElementById('admin-dash-stats');
-          if (!adminStatsEl) {
-            adminStatsEl = document.createElement('div');
-            adminStatsEl.id = 'admin-dash-stats';
-            const cabStats = document.getElementById('cab-stats');
-            cabStats.parentNode.insertBefore(adminStatsEl, cabStats.nextSibling);
-          }
-          const title = document.createElement('h3');
-          title.className = 'cab-table-wrap__title';
-          title.style.margin = '24px 0 12px';
-          title.textContent = 'Статистика системы (все клиенты)';
-
-          const grid = document.createElement('div');
-          grid.className = 'cab-stats';
-
-          const cards = [
-            { cls: 'cab-stats__card--new',     num: s.total_applications, label: 'Всего заявок' },
-            { cls: 'cab-stats__card--proc',     num: s.new_today,          label: 'Новых сегодня' },
-            { cls: 'cab-stats__card--transit',  num: s.total_users,        label: 'Клиентов' },
-          ];
-          cards.forEach(c => {
-            const card = document.createElement('div');
-            card.className = 'cab-stats__card ' + c.cls;
-            const num = document.createElement('span');
-            num.className = 'cab-stats__number';
-            num.textContent = String(c.num);
-            const lbl = document.createElement('span');
-            lbl.className = 'cab-stats__label';
-            lbl.textContent = c.label;
-            card.appendChild(num);
-            card.appendChild(lbl);
-            grid.appendChild(card);
-          });
-
-          // Popular direction card
-          const dirCard = document.createElement('div');
-          dirCard.className = 'cab-stats__card cab-stats__card--done';
-          const dirNum = document.createElement('span');
-          dirNum.className = 'cab-stats__number';
-          dirNum.style.fontSize = '13px';
-          dirNum.textContent = s.popular_direction;
-          const dirLbl = document.createElement('span');
-          dirLbl.className = 'cab-stats__label';
-          dirLbl.textContent = 'Топ маршрут';
-          dirCard.appendChild(dirNum);
-          dirCard.appendChild(dirLbl);
-          grid.appendChild(dirCard);
-
-          adminStatsEl.textContent = '';
-          adminStatsEl.appendChild(title);
-          adminStatsEl.appendChild(grid);
-        }
-      } catch {}
-    }
-  }
-
-  // All Applications (admin)
-  async function loadAllApplications() {
-    const statusVal = document.getElementById('admin-filter-status').value;
-    let url = `${ADMIN_API}?action=applications`;
-    if (statusVal) url += `&status=${statusVal}`;
-    try {
-      const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const d = await res.json();
-      const tbody = document.getElementById('admin-apps-table-body');
-      if (!tbody) return;
-      const rows = (d.applications || []).map(a => {
-        const tr = document.createElement('tr');
-
-        const cells = [
-          '#' + a.id,
-          a.full_name || '—',
-          a.user_email || '—',
-          a.route || (a.city_from + ' → ' + a.city_to),
-          a.weight_kg ? a.weight_kg.toLocaleString('ru-RU') : '—',
-          TYPE_LABELS[a.transport_type] || a.transport_type,
-        ];
-        cells.forEach((text, i) => {
-          const td = document.createElement('td');
-          if (i === 5) {
-            const span = document.createElement('span');
-            span.className = 'cab-type';
-            span.textContent = text;
-            td.appendChild(span);
-          } else {
-            td.textContent = text;
-          }
-          tr.appendChild(td);
-        });
-
-        // Status dropdown
-        const statusTd = document.createElement('td');
-        const sel = document.createElement('select');
-        sel.className = 'cab-admin-status-select';
-        sel.dataset.appId = a.id;
-        [1,2,3,4,5].forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v;
-          opt.textContent = STATUS_LABELS[v];
-          if (v === a.status) opt.selected = true;
-          sel.appendChild(opt);
-        });
-        sel.addEventListener('change', async () => {
-          const newStatus = parseInt(sel.value, 10);
-          const appId = parseInt(sel.dataset.appId, 10);
-          try {
-            const rd = await postJsonWithCsrf(ADMIN_API + '?action=update_status', { id: appId, status: newStatus });
-            if (!rd || rd.status !== 'ok') sel.value = a.status;
-          } catch { sel.value = a.status; }
-        });
-        statusTd.appendChild(sel);
-        tr.appendChild(statusTd);
-
-        // Date
-        const dateTd = document.createElement('td');
-        dateTd.textContent = formatDate(a.created_at);
-        tr.appendChild(dateTd);
-
-        return tr;
-      });
-      tbody.textContent = '';
-      rows.forEach(r => tbody.appendChild(r));
-    } catch {}
-  }
-
-  const adminFilterApply = document.getElementById('admin-filter-apply');
-  if (adminFilterApply) adminFilterApply.addEventListener('click', loadAllApplications);
-
-  // Users (admin)
-  async function loadUsers() {
-    try {
-      const res = await fetch(`${ADMIN_API}?action=users`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const d = await res.json();
-      const tbody = document.getElementById('admin-users-table-body');
-      if (!tbody) return;
-      const rows = (d.users || []).map(u => {
-        const tr = document.createElement('tr');
-        const fields = [
-          String(u.id),
-          u.full_name || '—',
-          u.email || '—',
-          u.company || '—',
-        ];
-        fields.forEach(text => {
-          const td = document.createElement('td');
-          td.textContent = text;
-          tr.appendChild(td);
-        });
-
-        // Role badge
-        const roleTd = document.createElement('td');
-        const badge = document.createElement('span');
-        badge.className = 'cab-role-badge cab-role-badge--' + (u.role || 'client');
-        badge.textContent = u.role === 'admin' ? 'Администратор' : 'Клиент';
-        roleTd.appendChild(badge);
-        tr.appendChild(roleTd);
-
-        // Date
-        const dateTd = document.createElement('td');
-        dateTd.textContent = formatDate(u.created_at);
-        tr.appendChild(dateTd);
-
-        return tr;
-      });
-      tbody.textContent = '';
-      rows.forEach(r => tbody.appendChild(r));
     } catch {}
   }
 
